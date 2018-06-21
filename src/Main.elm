@@ -85,6 +85,29 @@ view model =
         ]
 
 
+
+-- Helper Functions
+
+
 formatTime : Float -> String
 formatTime model =
-    String.concat [ toString (floor (Time.inMinutes model) % 60), ":", toString (floor (Time.inSeconds model) % 60) ]
+    let
+        minutes =
+            floor (Time.inMinutes model) % 60
+
+        seconds =
+            floor (Time.inSeconds model) % 60
+    in
+    String.concat
+        [ toStringAndFormat minutes
+        , ":"
+        , toStringAndFormat seconds
+        ]
+
+
+toStringAndFormat : Int -> String
+toStringAndFormat num =
+    if num < 10 then
+        "0" ++ toString num
+    else
+        toString num
