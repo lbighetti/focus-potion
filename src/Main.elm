@@ -2,6 +2,7 @@ module Main exposing (..)
 
 import Html exposing (..)
 import Html.Attributes exposing (..)
+import Html.Events exposing (onClick)
 import Time exposing (Time, minute, second)
 
 
@@ -19,12 +20,27 @@ main =
 
 
 type alias Model =
-    Float
+    { counter : Float
+    , active : Bool
+    , period : Period
+    }
 
 
 init : ( Model, Cmd Msg )
 init =
-    ( 25 * minute, Cmd.none )
+    ( { counter = 0 * minute
+      , active = False
+      , period = Stopped
+      }
+    , Cmd.none
+    )
+
+
+type Period
+    = Focusing
+    | InSmallBreak
+    | InBigBreak
+    | Stopped
 
 
 
@@ -33,13 +49,36 @@ init =
 
 type Msg
     = Tick Time
+    | Focus
+    | SmallBreak
+    | BigBreak
+    | Stop
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
+    let
+        newCounter =
+            if model.active then
+                model.counter - (1 * second)
+            else
+                model.counter
+    in
     case msg of
         Tick _ ->
-            ( model - (1 * second), Cmd.none )
+            ( { model | counter = newCounter }, Cmd.none )
+
+        Focus ->
+            ( { model | active = True, counter = 25 * minute, period = Focusing }, Cmd.none )
+
+        SmallBreak ->
+            ( { model | active = True, counter = 5 * minute, period = InSmallBreak }, Cmd.none )
+
+        BigBreak ->
+            ( { model | active = True, counter = 20 * minute, period = InBigBreak }, Cmd.none )
+
+        Stop ->
+            ( { model | active = False, counter = 0 * minute, period = Stopped }, Cmd.none )
 
 
 
@@ -67,18 +106,39 @@ view model =
                 [ div [ class "row" ]
                     [ div [ class "col-md-12" ]
                         [ h1 []
-                            [ text (formatTime model) ]
+                            [ text (formatTime model.counter) ]
                         , p [ class "lead" ]
-                            [ text "Focus!" ]
+                            [ text "Focus!"
+                            ]
                         ]
                     ]
                 , div [ class "row" ]
-                    [ div [ class "col-md-4" ]
-                        [ div [ class "btn btn-primary btn-block" ] [ text "focus" ] ]
-                    , div [ class "col-md-4" ]
-                        [ div [ class "btn btn-secondary btn-block" ] [ text "small break" ] ]
-                    , div [ class "col-md-4" ]
-                        [ div [ class "btn btn-secondary btn-block" ] [ text "big break" ] ]
+                    [ div [ class "col-md-3" ]
+                        [ div [ class "btn btn-primary btn-block", onClick Focus ]
+                            [ i [ class "fas fa-clock fa-lg" ]
+                                []
+                            ]
+                        ]
+                    , div [ class "col-md-3" ]
+                        [ div [ class "btn btn-secondary btn-block", onClick SmallBreak ]
+                            [ i [ class "fas fa-coffee fa-lg" ]
+                                []
+                            ]
+                        ]
+                    , div [ class "col-md-3" ]
+                        [ div [ class "btn btn-secondary btn-block", onClick BigBreak ]
+                            [ i [ class "fas fa-coffee fa-lg" ]
+                                []
+                            , i [ class "fas fa-coffee fa-lg" ]
+                                []
+                            ]
+                        ]
+                    , div [ class "col-md-3" ]
+                        [ div [ class "btn btn-outline-danger btn-block", onClick Stop ]
+                            [ i [ class "fas fa-ban fa-lg" ]
+                                []
+                            ]
+                        ]
                     ]
                 ]
             ]
