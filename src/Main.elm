@@ -21,6 +21,7 @@ main =
 
 type alias Model =
     { counter : Float
+    , counterMax : Float
     , active : Bool
     , period : Period
     }
@@ -29,6 +30,7 @@ type alias Model =
 init : ( Model, Cmd Msg )
 init =
     ( { counter = 0 * minute
+      , counterMax = 25 * minute
       , active = False
       , period = Stopped
       }
@@ -69,16 +71,16 @@ update msg model =
             ( { model | counter = newCounter }, Cmd.none )
 
         Focus ->
-            ( { model | active = True, counter = 25 * minute, period = Focusing }, Cmd.none )
+            ( { model | active = True, counter = 25 * minute, counterMax = 25 * minute, period = Focusing }, Cmd.none )
 
         SmallBreak ->
-            ( { model | active = True, counter = 5 * minute, period = InSmallBreak }, Cmd.none )
+            ( { model | active = True, counter = 5 * minute, counterMax = 5 * minute, period = InSmallBreak }, Cmd.none )
 
         BigBreak ->
-            ( { model | active = True, counter = 20 * minute, period = InBigBreak }, Cmd.none )
+            ( { model | active = True, counter = 20 * minute, counterMax = 20 * minute, period = InBigBreak }, Cmd.none )
 
         Stop ->
-            ( { model | active = False, counter = 0 * minute, period = Stopped }, Cmd.none )
+            ( { model | active = False, counter = 0 * minute, counterMax = 25 * minute, period = Stopped }, Cmd.none )
 
 
 
@@ -105,14 +107,42 @@ view model =
             [ div [ class "starter-template" ]
                 [ div [ class "row" ]
                     [ div [ class "col-md-12" ]
-                        [ h1 []
+                        [ h1 [ class "display-4" ]
                             [ text (formatTime model.counter) ]
-                        , p [ class "lead" ]
-                            [ text "Focus!"
+                        ]
+                    , div [ class "col-md-12" ]
+                        [ p [ class "lead" ]
+                            [ text
+                                (case model.period of
+                                    Focusing ->
+                                        "Focus!"
+
+                                    InSmallBreak ->
+                                        "Catch your breath."
+
+                                    InBigBreak ->
+                                        "Relax and enjoy!"
+
+                                    Stopped ->
+                                        "Ready to roll?"
+                                )
+                            ]
+                        ]
+                    , div [ class "col-md-12" ]
+                        [ div [ class "progress" ]
+                            [ div
+                                [ classList
+                                    [ ( "progress-bar progress-bar-striped progress-bar-animated", True )
+                                    , ( "bg-primary", model.period == Focusing )
+                                    , ( "bg-secondary", model.period /= Focusing )
+                                    ]
+                                , attribute "style" (progressPercentageString model.counter model.counterMax)
+                                ]
+                                []
                             ]
                         ]
                     ]
-                , div [ class "row" ]
+                , div [ class "row mt-5" ]
                     [ div [ class "col-md-3" ]
                         [ div [ class "btn btn-primary btn-block", onClick Focus ]
                             [ i [ class "fas fa-clock fa-lg" ]
@@ -171,3 +201,12 @@ toStringAndFormat num =
         "0" ++ toString num
     else
         toString num
+
+
+progressPercentageString : Float -> Float -> String
+progressPercentageString current total =
+    let
+        percentage =
+            (current / total) * 100
+    in
+    String.concat [ "width: ", toString percentage, "%" ]
