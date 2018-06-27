@@ -9,6 +9,7 @@ module.exports = {
     elmBrunch: {
       mainModules: ['app/elm/Main.elm'],
       outputFolder: 'public/js',
+      executablePath: 'node_modules/elm/binwrappers',
       /* '--debug' parameter activates Elm 0.18 history debugger */
       makeParameters: '--debug'
     },
