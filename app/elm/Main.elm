@@ -138,7 +138,8 @@ view model =
                                 [ classList
                                     [ ( "progress-bar progress-bar-striped progress-bar-animated", True )
                                     , ( "bg-primary", model.period == Focusing )
-                                    , ( "bg-secondary", model.period /= Focusing )
+                                    , ( "bg-secondary", model.period == InBigBreak || model.period == InSmallBreak )
+                                    , ( "bg-danger", model.period == Stopped )
                                     ]
                                 , attribute "style" (progressPercentageString model.counter model.counterMax)
                                 ]
