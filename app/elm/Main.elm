@@ -77,7 +77,7 @@ update msg model =
             ( { model | active = True, counter = 5 * minute, counterMax = 5 * minute, period = InSmallBreak }, Cmd.none )
 
         BigBreak ->
-            ( { model | active = True, counter = 20 * minute, counterMax = 20 * minute, period = InBigBreak }, Cmd.none )
+            ( { model | active = True, counter = 30 * minute, counterMax = 30 * minute, period = InBigBreak }, Cmd.none )
 
         Stop ->
             ( { model | active = False, counter = 0 * minute, counterMax = 25 * minute, period = Stopped }, Cmd.none )
@@ -117,13 +117,22 @@ view model =
                             [ text
                                 (case model.period of
                                     Focusing ->
-                                        "Focus!"
+                                        if model.counter >= 0 then
+                                            "Focus!"
+                                        else
+                                            "Time to take a break!"
 
                                     InSmallBreak ->
-                                        "Catch your breath."
+                                        if model.counter >= 0 then
+                                            "Catch your breath."
+                                        else
+                                            "Time to Focus again!"
 
                                     InBigBreak ->
-                                        "Relax and enjoy!"
+                                        if model.counter >= 0 then
+                                            "Relax and enjoy!"
+                                        else
+                                            "Time to Focus again!"
 
                                     Stopped ->
                                         "Ready to roll?"
@@ -199,16 +208,26 @@ view model =
 
 
 formatTime : Float -> String
-formatTime model =
+formatTime time =
     let
+        timeMod =
+            if time < 0 then
+                negate time
+            else
+                time
+
         minutes =
-            floor (Time.inMinutes model) % 60
+            floor (Time.inMinutes timeMod) % 60
 
         seconds =
-            floor (Time.inSeconds model) % 60
+            floor (Time.inSeconds timeMod) % 60
     in
     String.concat
-        [ toStringAndFormat minutes
+        [ if time < 0 then
+            "-"
+          else
+            ""
+        , toStringAndFormat minutes
         , ":"
         , toStringAndFormat seconds
         ]
