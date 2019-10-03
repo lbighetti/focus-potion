@@ -51,6 +51,8 @@ type Msg
     | SmallBreak
     | BigBreak
     | Stop
+    | Play
+    | Pause
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -68,16 +70,22 @@ update msg model =
             ( { model | counter = newCounter }, Cmd.none )
 
         Focus ->
-            ( { model | active = True, counter = 25 * 60000, counterMax = 25 * 60000, period = Focusing }, Cmd.none )
+            ( { model | active = False, counter = 25 * 60000, counterMax = 25 * 60000, period = Focusing }, Cmd.none )
 
         SmallBreak ->
-            ( { model | active = True, counter = 5 * 1000, counterMax = 5 * 60000, period = InSmallBreak }, Cmd.none )
+            ( { model | active = False, counter = 5 * 60000, counterMax = 5 * 60000, period = InSmallBreak }, Cmd.none )
 
         BigBreak ->
-            ( { model | active = True, counter = 30 * 60000, counterMax = 30 * 60000, period = InBigBreak }, Cmd.none )
+            ( { model | active = False, counter = 30 * 60000, counterMax = 30 * 60000, period = InBigBreak }, Cmd.none )
 
         Stop ->
             ( { model | active = False, counter = 0 * 60000, counterMax = 25 * 60000, period = Stopped }, Cmd.none )
+
+        Play ->
+            ( { model | active = True }, Cmd.none )
+        
+        Pause ->
+            ( { model | active = False }, Cmd.none )
 
 
 
@@ -172,6 +180,11 @@ bodySection model =
                 ]
             ]
         ]
+    , div [ class "row mt-12 justify-content-center" ]
+        [ div [ class "col-md-3 mt-3" ]
+            [ buttonTimer model.active ]
+        ]
+    
     , div [ class "row mt-5" ]
         [ div [ class "col-md-3 mt-1" ]
             [ button [ class "btn btn-primary btn-block", onClick Focus ]
@@ -264,3 +277,18 @@ progressPercentageString current total =
             (current / total) * 100
     in
     String.concat [ "width: ", String.fromFloat percentage, "%" ]
+
+
+buttonTimer : Bool -> Html Msg
+buttonTimer status =
+    if status then
+        button [ class "btn btn-success btn-block", onClick Pause ]
+            [ i [ class "fas fa fa-pause-circle fa-lg" ]
+                []
+            ]
+        
+    else
+        button [ class "btn btn-success btn-block", onClick Play ]
+            [ i [ class "fas fa fa-play-circle fa-lg" ]
+                []
+            ]
