@@ -1,13 +1,15 @@
 module Main exposing (..)
 
+import Browser
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onClick)
-import Time exposing (Time, minute, second)
+import String exposing (..)
+import Time
 
 
 main =
-    Html.program
+    Browser.element
         { init = init
         , view = view
         , update = update
@@ -27,15 +29,9 @@ type alias Model =
     }
 
 
-init : ( Model, Cmd Msg )
-init =
-    ( { counter = 0 * minute
-      , counterMax = 25 * minute
-      , active = False
-      , period = Stopped
-      }
-    , Cmd.none
-    )
+init : () -> ( Model, Cmd Msg )
+init flags =
+    ( Model 0 0 False Stopped, Cmd.none )
 
 
 type Period
@@ -50,11 +46,13 @@ type Period
 
 
 type Msg
-    = Tick Time
+    = Tick Time.Posix
     | Focus
     | SmallBreak
     | BigBreak
     | Stop
+    | Play
+    | Pause
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -62,7 +60,8 @@ update msg model =
     let
         newCounter =
             if model.active then
-                model.counter - (1 * second)
+                model.counter - 1000
+
             else
                 model.counter
     in
@@ -71,16 +70,22 @@ update msg model =
             ( { model | counter = newCounter }, Cmd.none )
 
         Focus ->
-            ( { model | active = True, counter = 25 * minute, counterMax = 25 * minute, period = Focusing }, Cmd.none )
+            ( { model | active = False, counter = 25 * 60000, counterMax = 25 * 60000, period = Focusing }, Cmd.none )
 
         SmallBreak ->
-            ( { model | active = True, counter = 5 * minute, counterMax = 5 * minute, period = InSmallBreak }, Cmd.none )
+            ( { model | active = False, counter = 5 * 60000, counterMax = 5 * 60000, period = InSmallBreak }, Cmd.none )
 
         BigBreak ->
-            ( { model | active = True, counter = 30 * minute, counterMax = 30 * minute, period = InBigBreak }, Cmd.none )
+            ( { model | active = False, counter = 30 * 60000, counterMax = 30 * 60000, period = InBigBreak }, Cmd.none )
 
         Stop ->
-            ( { model | active = False, counter = 0 * minute, counterMax = 25 * minute, period = Stopped }, Cmd.none )
+            ( { model | active = False, counter = 0 * 60000, counterMax = 25 * 60000, period = Stopped }, Cmd.none )
+
+        Play ->
+            ( { model | active = True }, Cmd.none )
+        
+        Pause ->
+            ( { model | active = False }, Cmd.none )
 
 
 
@@ -89,7 +94,7 @@ update msg model =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Time.every second Tick
+    Time.every 1000 Tick
 
 
 
@@ -135,18 +140,21 @@ bodySection model =
                         Focusing ->
                             if model.counter >= 0 then
                                 "Focus!"
+
                             else
                                 "Time to take a break!"
 
                         InSmallBreak ->
                             if model.counter >= 0 then
                                 "Catch your breath."
+
                             else
                                 "Time to Focus again!"
 
                         InBigBreak ->
                             if model.counter >= 0 then
                                 "Relax and enjoy!"
+
                             else
                                 "Time to Focus again!"
 
@@ -172,6 +180,11 @@ bodySection model =
                 ]
             ]
         ]
+    , div [ class "row mt-12 justify-content-center" ]
+        [ div [ class "col-md-3 mt-3" ]
+            [ buttonTimer model.active ]
+        ]
+    
     , div [ class "row mt-5" ]
         [ div [ class "col-md-3 mt-1" ]
             [ button [ class "btn btn-primary btn-block", onClick Focus ]
@@ -227,32 +240,34 @@ formatTime time =
         timeMod =
             if time < 0 then
                 negate time
+
             else
                 time
 
         minutes =
-            floor (Time.inMinutes timeMod) % 60
+            Time.toMinute Time.utc <| Time.millisToPosix (round timeMod)
 
         seconds =
-            floor (Time.inSeconds timeMod) % 60
+            Time.toSecond Time.utc <| Time.millisToPosix (round timeMod)
+
+        negative =
+            if time < 0 then
+                "-"
+
+            else
+                ""
     in
     String.concat
-        [ if time < 0 then
-            "-"
-          else
-            ""
-        , toStringAndFormat minutes
-        , ":"
-        , toStringAndFormat seconds
-        ]
+        [ negative, toStringAndFormat minutes, ":", toStringAndFormat seconds ]
 
 
 toStringAndFormat : Int -> String
 toStringAndFormat num =
     if num < 10 then
-        "0" ++ toString num
+        "0" ++ String.fromInt num
+
     else
-        toString num
+        String.fromInt num
 
 
 progressPercentageString : Float -> Float -> String
@@ -261,4 +276,19 @@ progressPercentageString current total =
         percentage =
             (current / total) * 100
     in
-    String.concat [ "width: ", toString percentage, "%" ]
+    String.concat [ "width: ", String.fromFloat percentage, "%" ]
+
+
+buttonTimer : Bool -> Html Msg
+buttonTimer status =
+    if status then
+        button [ class "btn btn-success btn-block", onClick Pause ]
+            [ i [ class "fas fa fa-pause-circle fa-lg" ]
+                []
+            ]
+        
+    else
+        button [ class "btn btn-success btn-block", onClick Play ]
+            [ i [ class "fas fa fa-play-circle fa-lg" ]
+                []
+            ]
